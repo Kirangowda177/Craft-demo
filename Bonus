@@ -1,1 +1,86 @@
+#### Country lookup  ####
 
+from flask import Flask, jsonify
+import requests
+
+app = Flask(__name__)
+
+@app.route('/health')
+def health():
+    return 'Service is healthy'
+
+@app.route('/diag')
+def diag():
+    api_status = requests.get('https://www.travel-advisory.info/api').json()
+    return jsonify(api_status)
+
+@app.route('/convert/<country_name>')
+def convert(country_name):
+    # Your country code conversion logic here
+    # Assuming you have a function convert_country_code(country_name) in your script
+    country_code = convert_country_code(country_name)
+    return jsonify({'country_code': country_code})
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
+##### Shell Script (deploy.sh) #####
+
+#!/bin/bash
+
+# Install required dependencies
+pip install Flask
+
+# Create local k8s cluster (assuming you have 'kind' installed)
+kind create cluster --name local-cluster
+
+# Build Docker image
+docker build -t country-lookup-service .
+
+# Load Docker image into the local cluster
+kind load docker-image country-lookup-service --name local-cluster
+
+# Apply Kubernetes deployment
+kubectl apply -f k8s/deployment.yaml
+
+# Wait for the service to be available
+sleep 10
+
+# Port forward to access the service
+kubectl port-forward service/country-lookup-service 5000:5000
+
+
+##### Kubernetes Deployment File (k8s/deployment.yaml) #######
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: country-lookup-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: country-lookup
+  template:
+    metadata:
+      labels:
+        app: country-lookup
+    spec:
+      containers:
+      - name: country-lookup-container
+        image: country-lookup-service
+        ports:
+        - containerPort: 5000
+
+
+#### Function to setup basic monitoring #####
+setup_monitoring() {
+    echo "Setting Up Basic Monitoring"
+    # Your monitoring setup logic here
+    # Example: Use Prometheus and Grafana for monitoring
+}
+# Main script ##
+# Setup basic monitoring
+setup_monitoring
