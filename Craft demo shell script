@@ -1,0 +1,34 @@
+#!/bin/bash
+
+API_URL="https://www.travel-advisory.info/api"
+SAVE_FILE="data.json"
+
+# Function to fetch data from the API and save it to a file
+fetch_data() {
+    curl -s "$API_URL" -o "$SAVE_FILE"
+}
+
+# Function to perform country lookup based on the file
+lookup_country() {
+    country_code="$1"
+    country_name=$(jq -r ".data.\"$country_code\".name" "$SAVE_FILE")
+
+    if [ "$country_name" == "null" ]; then
+        echo "Country not found for code $country_code"
+    else
+        echo "$country_name"
+    fi
+}
+
+# Main script
+if [ "$1" == "--countryCode" ]; then
+    country_code="$2"
+
+    # Fetch data from the API and save it to the file
+    fetch_data
+
+    # Perform country lookup based on the file
+    lookup_country "$country_code"
+else
+    echo "Usage: $0 --countryCode <country_code>"
+fi
